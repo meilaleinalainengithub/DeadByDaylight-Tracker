@@ -109,3 +109,23 @@ class Killers():
                         Ghost_Face, Good_Guy, Hag, Huntress, Knight, Legion, Mastermind, Nightmare, Nurse, Oni, Pig,
                         Plague, Skull_Merchant, Spirit, Trapper, Twins, Trickster, Unknown, Wraith, Xenomorph, Onryō,
                         Dredge, Nemesis]
+        
+    def randomizePerk(self, amount: int, exclude: list = None):
+        chosen = []
+        if exclude:    
+            self.tempkillers = self.killers
+            for killers in exclude:
+                self.tempKiller.remove(killers)
+    
+        for i in range(amount):
+            character = random.randrange(self.killers)
+            chosen.append(random.randrange(character))
+
+        return chosen
+    
+    def randomizeKiller(self, exclude: list = None):
+        if exclude:  
+            self.tempKiller = self.killers
+            for killers in exclude:
+                self.tempKiller.remove(killers)
+            return random.randrange(self.killers)

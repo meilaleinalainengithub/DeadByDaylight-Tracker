@@ -1,18 +1,33 @@
 import requests, discord, os, time, datetime, classes
 from dotenv import load_dotenv
+from discord import app_commands
 from discord.ext import commands
 load_dotenv('.env')
 
+# FUCKED UP SHIT:
+# - NON- SLASH COMMANDS
+# - SLASH COMMANDS
+# - I HAVE 2 CLIENTS
+# - MATH
+
 Survivors = classes.Survivors()
 Killers = classes.Killers()
+
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix=';', intents=intents)
+client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix=';', intents=intents, client=client)
+cmds = app_commands.CommandTree(client=client)
 
 def format_time_difference(time_difference):
     days = time_difference.days
     hours, remainder = divmod(time_difference.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return f"{days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds"
+
+@client.event
+async def on_ready():
+    await cmds.sync(guild=discord.Object(id=1198070162432200865))
+    print("ready")
 
 @bot.command(name="helpme")
 async def helpme(ctx):
@@ -59,7 +74,6 @@ async def reset(ctx):
     next_time_difference = next_target_date - current_time
 
     last_reset = format_time_difference(last_time_difference)
-    next_reset = format_time_difference(next_time_difference)
 
     embed = discord.Embed(
         title=f"Rank Reset - {time.strftime('%m/%d/%H:%M:%S')}",
@@ -68,53 +82,68 @@ async def reset(ctx):
     )
 
     embed.add_field(name="**Last Reset:**", value=f"{last_reset} ago", inline=False)
-    embed.add_field(name="**Next Reset:**", value=f"In {next_reset}", inline=False)
+    embed.add_field(name="**Next Reset:**", value=f"CURRENTLY FUCKED CUS I CANT TO MATH", inline=False)
 
     await ctx.send(embed=embed)
 
 @bot.command(name="randomperk")
-async def randomperk(ctx, role: str, amount: int, exclude: list = None):
-    embedSurvior = discord.Embed(
+async def randomperk(ctx, role: str, amount: str, exclude: list = None):
+    if role.lower() == "survivor":
+        embedSurvior = discord.Embed(
             title=f"Random Perks, Survivor - {time.strftime('%m/%d/%H:%M:%S')}",
             color=discord.Color.dark_grey())
 
-    embedKiller = discord.Embed(
-            title=f"Random Perks, Killer - {time.strftime('%m/%d/%H:%M:%S')}",
-            color=discord.Color.dark_grey())
-    
-    if role.lower() == "survivor":
-        if amount > 4 or amount < 0:
+        if int(amount) > 4 or int(amount) < 0:
             await ctx.send("Please select an amount within 1-4.")
 
-        perks = Survivors.randomizePerk(amount=amount, exclude=exclude)
-        for i in range(amount):
+        perks = Survivors.randomizePerk(amount=int(amount), exclude=exclude)
+        for i in range(int(amount)):
             embedSurvior.add_field(name=f"Perk{i}: ", value=perks[i-1])
 
+        await ctx.send(embed=embedSurvior)
+
     elif role.lower() == "killer":
-        pass
+        embedKiller = discord.Embed(
+            title=f"Random Perks, Killer - {time.strftime('%m/%d/%H:%M:%S')}",
+            color=discord.Color.dark_grey())
+        
+        if int(amount) > 4 or int(amount) < 0:
+            await ctx.send("Please select an amount within 1-4.")
+
+        perks = Killers.randomizePerk(amount=int(amount), exclude=exclude)
+        for i in range(int(amount)):
+            embedKiller.add_field(name=f"Perk{i}: ", value=perks[i-1])
+
+        await ctx.send(embed=embedKiller)
 
     else:
         await ctx.send("Invalid Role. Please select 'killer' or 'survivor'.")
 
 @bot.command(name="randomcharacter")
 async def randomcharacter(ctx, role: str, exclude: list = None):
-    embedSurvior = discord.Embed(
+    if role.lower() == "survivor":
+        embedSurvior = discord.Embed(
             title=f"Random Survivor - {time.strftime('%m/%d/%H:%M:%S')}",
             color=discord.Color.dark_grey())
-
-    embedKiller = discord.Embed(
-            title=f"Random Killer - {time.strftime('%m/%d/%H:%M:%S')}",
-            color=discord.Color.dark_grey())
-    
-    if role.lower() == "survivor":
+        
         survivor = Survivors.randomizeSurvivor(exclude=exclude)
         embedSurvior.add_field(name="Survivor:", value=survivor, inline=False)
         await ctx.send(embed=embedSurvior)
 
     elif role.lower() == "killer":
-        pass
+        embedKiller = discord.Embed(
+            title=f"Random Killer - {time.strftime('%m/%d/%H:%M:%S')}",
+            color=discord.Color.dark_grey())
+
+        killer = Killers.randomizeKiller(exclude=exclude)
+        embedKiller.add_field(name="Killer:", value=killer, inline=False)
+        await ctx.send(embed=embedKiller)
 
     else:
         await ctx.send("Please enter a valid role. Survivor/Killer")
 
-bot.run(os.getenv('DISCORD_TOKEN'))
+@cmds.command(name="test", description="description") 
+async def test(interaction: discord.Interaction):    
+    await interaction.response.send_message("command")
+
+client.run(os.getenv('DISCORD_TOKEN'))
