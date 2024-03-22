@@ -1,22 +1,17 @@
 import requests, discord, os, time, datetime, classes
 from dotenv import load_dotenv
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
 load_dotenv('.env')
 
 # FUCKED UP SHIT:
-# - NON- SLASH COMMANDS
-# - SLASH COMMANDS
-# - I HAVE 2 CLIENTS
+# - PARAMETERS ARE FUCKED
 # - MATH
 
 Survivors = classes.Survivors()
 Killers = classes.Killers()
 
-intents = discord.Intents.all()
-client = discord.Client(intents=intents)
-bot = commands.Bot(command_prefix=';', intents=intents, client=client)
-cmds = app_commands.CommandTree(client=client)
+bot = commands.Bot(command_prefix=';', intents=discord.Intents.all())
 
 def format_time_difference(time_difference):
     days = time_difference.days
@@ -24,13 +19,13 @@ def format_time_difference(time_difference):
     minutes, seconds = divmod(remainder, 60)
     return f"{days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds"
 
-@client.event
+@bot.event
 async def on_ready():
-    await cmds.sync(guild=discord.Object(id=1198070162432200865))
-    print("ready")
+    e = await bot.tree.sync()
+    print(e)
 
-@bot.command(name="helpme")
-async def helpme(ctx):
+@bot.tree.command(name="help", description="Helps You... read the name")
+async def helpme(interaction: discord.Interaction):
     embed = discord.Embed(
         title="Dead By Daylight Tracker",
         description='''**Commands**\n
@@ -39,10 +34,10 @@ async def helpme(ctx):
         color=discord.Colour.dark_grey()
     )
 
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name="shrine")
-async def shrine(ctx):
+@bot.tree.command(name="shrine", description="Shows current Shrine of Secrets")
+async def shrine(interaction: discord.Interaction):
     response = requests.get("https://dbd.tricky.lol/api/shrine")
     if response.status_code == 200:
         data = response.json()
@@ -56,12 +51,12 @@ async def shrine(ctx):
         embed.add_field(name="Ends: ", value=datetime.datetime.fromtimestamp(data['end']).strftime('%Y-%m-%d %H:%M:%S'), inline=True)
         embed.add_field(name="Perks:", value="\n\n".join([f"**{perk['id']}**\n**Bloodpoints:** {perk['bloodpoints']},\n**Shards:** {perk['shards']}" for perk in data['perks']]), inline=False)
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     else:
         print("IT DIDNT WORK FUCKER")
 
-@bot.command(name="reset")
-async def reset(ctx):
+@bot.tree.command(name="reset", description="Shows next and past rank reset")
+async def reset(interaction: discord.Interaction):
     current_time = datetime.datetime.now()
     last_target_date = datetime.datetime(current_time.year, current_time.month, 13)
     last_time_difference = current_time - last_target_date
@@ -84,23 +79,23 @@ async def reset(ctx):
     embed.add_field(name="**Last Reset:**", value=f"{last_reset} ago", inline=False)
     embed.add_field(name="**Next Reset:**", value=f"CURRENTLY FUCKED CUS I CANT TO MATH", inline=False)
 
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name="randomperk")
-async def randomperk(ctx, role: str, amount: str, exclude: list = None):
+@bot.tree.command(name="randomperk", description="idk man gives you a random character")
+async def randomperk(interaction: discord.Interaction, role: str, amount: int, exclude: str = None):
     if role.lower() == "survivor":
         embedSurvior = discord.Embed(
             title=f"Random Perks, Survivor - {time.strftime('%m/%d/%H:%M:%S')}",
             color=discord.Color.dark_grey())
 
-        if int(amount) > 4 or int(amount) < 0:
-            await ctx.send("Please select an amount within 1-4.")
+        if int(amount) > 4 or int(amount) < 0:  
+            await interaction.response.send_message("Please select an amount within 1-4.")
 
-        perks = Survivors.randomizePerk(amount=int(amount), exclude=exclude)
+        perks, character = Survivors.randomizePerk(amount=int(amount), exclude=exclude)
         for i in range(int(amount)):
-            embedSurvior.add_field(name=f"Perk{i}: ", value=perks[i-1])
+            embedSurvior.add_field(name=f"Perk {i+1}: ", value=f'{perks[i-1]} - {character}', inline=False)
 
-        await ctx.send(embed=embedSurvior)
+        await interaction.response.send_message(embed=embedSurvior)
 
     elif role.lower() == "killer":
         embedKiller = discord.Embed(
@@ -108,19 +103,19 @@ async def randomperk(ctx, role: str, amount: str, exclude: list = None):
             color=discord.Color.dark_grey())
         
         if int(amount) > 4 or int(amount) < 0:
-            await ctx.send("Please select an amount within 1-4.")
+            await interaction.response.send_message("Please select an amount within 1-4.")
 
-        perks = Killers.randomizePerk(amount=int(amount), exclude=exclude)
+        perks, character = Killers.randomizePerk(amount=int(amount), exclude=exclude)
         for i in range(int(amount)):
-            embedKiller.add_field(name=f"Perk{i}: ", value=perks[i-1])
+            embedKiller.add_field(name=f"Perk {i+1}: ", value=f'{perks[i-1]} - {character}', inline=False)
 
-        await ctx.send(embed=embedKiller)
+        await interaction.response.send_message(embed=embedKiller)
 
     else:
-        await ctx.send("Invalid Role. Please select 'killer' or 'survivor'.")
+        await interaction.response.send_message("Invalid Role. Please select 'killer' or 'survivor'.")
 
-@bot.command(name="randomcharacter")
-async def randomcharacter(ctx, role: str, exclude: list = None):
+@bot.tree.command(name="randomcharacter", description="idk man gives you a random character")
+async def randomcharacter(interaction: discord.Interaction, role: str, exclude: str = None):
     if role.lower() == "survivor":
         embedSurvior = discord.Embed(
             title=f"Random Survivor - {time.strftime('%m/%d/%H:%M:%S')}",
@@ -128,7 +123,7 @@ async def randomcharacter(ctx, role: str, exclude: list = None):
         
         survivor = Survivors.randomizeSurvivor(exclude=exclude)
         embedSurvior.add_field(name="Survivor:", value=survivor, inline=False)
-        await ctx.send(embed=embedSurvior)
+        await interaction.response.send_message(embed=embedSurvior)
 
     elif role.lower() == "killer":
         embedKiller = discord.Embed(
@@ -137,13 +132,9 @@ async def randomcharacter(ctx, role: str, exclude: list = None):
 
         killer = Killers.randomizeKiller(exclude=exclude)
         embedKiller.add_field(name="Killer:", value=killer, inline=False)
-        await ctx.send(embed=embedKiller)
+        await interaction.response.send_message(embed=embedKiller)
 
     else:
-        await ctx.send("Please enter a valid role. Survivor/Killer")
+        await interaction.response.send_message("Please enter a valid role. Survivor/Killer")
 
-@cmds.command(name="test", description="description") 
-async def test(interaction: discord.Interaction):    
-    await interaction.response.send_message("command")
-
-client.run(os.getenv('DISCORD_TOKEN'))
+bot.run(os.getenv('DISCORD_TOKEN'))
