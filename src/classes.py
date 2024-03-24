@@ -48,7 +48,8 @@ class Survivors():
         }
         
     def randomizePerk(self, amount: int, exclude: str = None):  
-        chosen = []
+        chosen_perks = []
+        chosen_chars = []
         self.tempSurvivors = self.survivors
         if exclude:    
             for survivor in exclude:
@@ -57,16 +58,22 @@ class Survivors():
         for _ in range(int(amount)):
             character, perks = random.choice(list(self.tempSurvivors.items()))
             chosen_perk = random.choice(perks)
-            chosen.append((character, chosen_perk))
+            chosen_perks.append(chosen_perk)
+            chosen_chars.append(character)
 
-        return chosen
+        return chosen_perks, chosen_chars
     
-    def randomizeSurvivor(self, exclude: str = None):   
+    def randomizeSurvivor(self, amount, exclude: str = None):   
+        chosen_chars = []
         self.tempSurvivors = self.survivors
-        if exclude:  
+        if exclude:    
             for survivor in exclude:
                 self.tempSurvivors.remove(survivor)
-        return random.choice(self.tempSurvivors)
+
+        for _ in range(int(amount)):
+            character, perks = random.choice(list(self.tempSurvivors.items()))
+            chosen_chars.append(character)
+        return chosen_chars
         
 class Killers():
     def __init__(self):
