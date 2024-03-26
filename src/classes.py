@@ -77,6 +77,9 @@ class Survivors():
 
     def test():
         print("test")
+
+    def anothertest():
+        print("testign")
         
 class Killers():
     def __init__(self):
