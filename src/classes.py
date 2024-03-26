@@ -74,6 +74,9 @@ class Survivors():
             character, perks = random.choice(list(self.tempSurvivors.items()))
             chosen_chars.append(character)
         return chosen_chars
+
+    def test():
+        print("test")
         
 class Killers():
     def __init__(self):
