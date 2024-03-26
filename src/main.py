@@ -14,17 +14,6 @@ async def on_ready():
     e = await bot.tree.sync()
     print(e)
 
-@bot.tree.command(name="help", description="Helps You... read the name")
-async def help(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="Dead By Daylight Tracker",
-        description='''**Commands**\n
-        >>> /help - Sends this message.\n/shrine - Shows the current Shrine of Secrets.\n/reset - Shows the time until the next and since the last rank reset.\n/randomperk(role, amount, exclude?) - Returns (amount) random perks from the role chosen excluding the chosen characters.\n/randomcharacter(role, exclude?) - Returns a random character from the role chosen excluding the chosen characters''',
-        color=discord.Colour.dark_grey()
-    )
-
-    await interaction.response.send_message(embed=embed)
-
 @bot.tree.command(name="shrine", description="Shows current Shrine of Secrets")
 async def shrine(interaction: discord.Interaction):
     response = requests.get("https://dbd.tricky.lol/api/shrine")
@@ -44,8 +33,8 @@ async def shrine(interaction: discord.Interaction):
     else:
         print("IT DIDNT WORK FUCKER")
 
-@bot.tree.command(name="randomperk", description="idk man gives you a random character")
-async def randomperk(interaction: discord.Interaction, role: str, amount: int, exclude: str = None):
+@bot.tree.command(name="randomperk", description="Returns a random perk")
+async def randomperk(interaction: discord.Interaction, role: str, amount: int = 1, exclude: str = None):
     if role.lower() == "survivor" or role.lower() == "killer":
         embed = discord.Embed(
             title=f"Random Perks, {role.capitalize()} - {time.strftime('%m/%d/%H:%M:%S')}",
@@ -66,19 +55,20 @@ async def randomperk(interaction: discord.Interaction, role: str, amount: int, e
     else:
         await interaction.response.send_message("Invalid Role. Please select 'killer' or 'survivor'.")
 
-@bot.tree.command(name="randomcharacter", description="idk man gives you a random character")
-async def randomcharacter(interaction: discord.Interaction, role: str, exclude: str = None):
-    if role.lower() == "survivor":
+@bot.tree.command(name="randomcharacter", description="Returns a random character")
+async def randomcharacter(interaction: discord.Interaction, role: str, amount: int = 1, exclude: str = None):
+    if role.lower() == "survivor" or role.lower() == "killer":
         embed = discord.Embed(
             title=f"Random {role.capitalize()} - {time.strftime('%m/%d/%H:%M:%S')}",
             color=discord.Color.dark_grey())
         
         if role.lower() == "survivor":
-            character = Survivors.randomizeSurvivor(exclude=exclude)
+            character = Survivors.randomizeSurvivor(exclude=exclude, amount=amount)
         elif role.lower() == "killer":
-            character = Killers.randomizeKiller(exclude=exclude)
+            character = Killers.randomizeKiller(exclude=exclude, amount=amount)
 
-        embed.add_field(name=f"{role.capitalize()}:", value=character, inline=False)
+        for i in range(int(amount)):
+            embed.add_field(name=f"{role.capitalize()}:", value=character[i-1], inline=False)
         await interaction.response.send_message(embed=embed)
 
     else:
